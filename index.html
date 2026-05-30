@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>benchmarkDB — AI Hardware Benchmarking Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e1117;--surface:#161b26;--surface2:#1e2636;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --accent:#3b82f6;--accent2:#22d3ee;
+  --text:#e4e8f0;--muted:#8b94a8;
+  --green:#22c55e;--amber:#f59e0b;--red:#ef4444;
+  --tag-bg:rgba(59,130,246,0.12);--tag-border:rgba(59,130,246,0.3);
+  --mono:'JetBrains Mono','Fira Code',monospace;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Fira Code',monospace;font-size:13px;min-height:100vh}
+.app{display:flex;flex-direction:column;height:100vh}
+.titlebar{display:flex;align-items:center;border-bottom:0.5px solid var(--border);background:var(--surface);flex-shrink:0}
+.tb-brand{padding:10px 16px;font-size:12px;font-weight:500;color:var(--text);border-right:0.5px solid var(--border);letter-spacing:0.05em}
+.tb-brand span{color:var(--muted);font-weight:400}
+.tb-tabs{display:flex;flex:1}
+.tb-tab{padding:10px 14px;font-size:11px;font-family:inherit;cursor:pointer;border:none;background:transparent;color:var(--muted);border-right:0.5px solid var(--border);transition:all .12s;letter-spacing:0.03em}
+.tb-tab:hover{color:var(--text);background:var(--surface2)}
+.tb-tab.on{color:var(--text);background:var(--surface2);border-bottom:2px solid var(--text)}
+.tb-right{padding:6px 12px;display:flex;gap:6px;margin-left:auto}
+.ibtn{font-family:inherit;font-size:11px;padding:4px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .12s}
+.ibtn:hover{color:var(--text);border-color:rgba(255,255,255,0.3)}
+.ibtn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ibtn.accent:hover{background:#2563eb}
+.body{display:flex;flex:1;overflow:hidden}
+.side{width:185px;border-right:0.5px solid var(--border);padding:12px 0;flex-shrink:0;background:var(--surface);overflow-y:auto}
+.side-sec{margin-bottom:16px}
+.side-hd{font-size:9px;letter-spacing:.1em;color:var(--muted);padding:0 12px 4px;text-transform:uppercase}
+.si{display:flex;align-items:center;gap:7px;padding:5px 12px;cursor:pointer;font-size:11px;color:var(--muted);transition:all .1s;border-left:2px solid transparent}
+.si:hover{color:var(--text);background:var(--surface2)}
+.si.on{color:var(--text);border-left-color:var(--text);background:var(--surface2)}
+.si .ct{margin-left:auto;font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--muted)}
+.main{flex:1;overflow-y:auto;padding:16px;background:var(--bg)}
+.pg{display:none}.pg.on{display:block}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.pt{font-size:15px;font-weight:500;color:var(--text)}
+.ps{font-size:11px;color:var(--muted);margin-top:2px}
+.mrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.mc{background:var(--surface);border-radius:var(--radius);padding:12px 14px;border:0.5px solid var(--border)}
+.mc-l{font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:.04em}
+.mc-v{font-size:20px;font-weight:500}
+.mc-d{font-size:10px;margin-top:3px;color:var(--muted)}
+.up{color:var(--green)}.dn{color:var(--red)}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden}
+.card-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:0.5px solid var(--border)}
+.card-title{font-size:11px;font-weight:500;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.toolbar{display:flex;gap:6px;padding:8px 12px;border-bottom:0.5px solid var(--border);background:var(--surface2)}
+.sx{flex:1;font-family:inherit;font-size:11px;padding:5px 9px;background:var(--surface);border:0.5px solid var(--border2);color:var(--text);border-radius:var(--radius);outline:none}
+.sx::placeholder{color:var(--muted)}
+.sx:focus{border-color:rgba(255,255,255,0.3)}
+select.sx{cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed}
+.tbl th{padding:7px 12px;text-align:left;color:var(--muted);font-weight:500;font-size:10px;letter-spacing:.05em;border-bottom:0.5px solid var(--border);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl th:hover{color:var(--text)}
+.tbl td{padding:8px 12px;border-bottom:0.5px solid var(--border);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--surface2)}
+.tag{display:inline-flex;align-items:center;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:500;letter-spacing:.04em;border:0.5px solid}
+.tag-blue{background:rgba(59,130,246,0.15);color:#93c5fd;border-color:rgba(59,130,246,0.3)}
+.tag-green{background:rgba(34,197,94,0.15);color:#86efac;border-color:rgba(34,197,94,0.3)}
+.tag-amber{background:rgba(245,158,11,0.15);color:#fcd34d;border-color:rgba(245,158,11,0.3)}
+.tag-red{background:rgba(239,68,68,0.15);color:#fca5a5;border-color:rgba(239,68,68,0.3)}
+.tag-gray{background:rgba(255,255,255,0.06);color:var(--muted);border-color:var(--border2)}
+.tag-teal{background:rgba(34,211,238,0.12);color:#67e8f9;border-color:rgba(34,211,238,0.3)}
+.ract{display:flex;gap:4px}
+.rb{font-family:inherit;font-size:10px;padding:2px 7px;border:0.5px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);cursor:pointer;transition:all .1s}
+.rb:hover{border-color:var(--border2);color:var(--text)}
+.rb.del:hover{border-color:var(--red);color:var(--red)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.pht{font-size:10px;font-weight:500;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.brow{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:11px}
+.blbl{width:120px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.bwrap{flex:1;background:var(--surface2);border-radius:3px;height:16px}
+.bfill{height:16px;border-radius:3px;display:flex;align-items:center;padding-left:6px;font-size:9px;color:#fff;font-weight:500;min-width:24px;transition:width .3s}
+.hwg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:12px}
+.hwc{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px;cursor:pointer;transition:border-color .15s}
+.hwc:hover{border-color:var(--border2)}
+.hwc.sel{border-color:var(--accent);background:rgba(59,130,246,0.05)}
+.hw-n{font-size:12px;font-weight:500;margin-bottom:2px;color:var(--text)}
+.hw-t{font-size:10px;color:var(--muted);margin-bottom:10px}
+.hw-row{display:flex;justify-content:space-between;font-size:10px;margin-top:4px}
+.hw-k{color:var(--muted)}.hw-v{color:var(--text)}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fgf{display:flex;flex-direction:column;gap:4px}.fgf.full{grid-column:1/-1}
+label{font-size:10px;color:var(--muted);letter-spacing:.03em}
+input[type=text],input[type=number],select,textarea{font-family:inherit;font-size:11px;padding:6px 9px;background:var(--surface2);border:0.5px solid var(--border2);color:var(--text);border-radius:var(--radius);outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:rgba(255,255,255,0.3)}
+textarea{resize:vertical;min-height:60px}
+.fa{margin-top:12px;display:flex;gap:8px;justify-content:flex-end}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);padding:10px 16px;font-size:11px;display:flex;align-items:center;gap:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.sort-arrow{font-size:9px;margin-left:3px;color:var(--muted)}
+.note{font-size:11px;color:var(--muted);padding:10px 14px;border-top:0.5px solid var(--border);background:rgba(59,130,246,0.05)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="toast" id="toast">
+  <span style="color:var(--green);font-size:14px">✓</span>
+  <span id="toast-msg">Done</span>
+</div>
+
+<div class="titlebar">
+  <div class="tb-brand">bench<span>mark</span>DB</div>
+  <div class="tb-tabs">
+    <button class="tb-tab on" onclick="goTab(this,'overview')">⌂ Overview</button>
+    <button class="tb-tab" onclick="goTab(this,'experiments')">⚗ Experiments</button>
+    <button class="tb-tab" onclick="goTab(this,'hardware')">⬡ Hardware</button>
+    <button class="tb-tab" onclick="goTab(this,'compare')">⇌ Compare</button>
+    <button class="tb-tab" onclick="goTab(this,'newrun')">+ Log run</button>
+  </div>
+  <div class="tb-right">
+    <button class="ibtn" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
+</div>
+
+<div class="body">
+<div class="side">
+  <div class="side-sec">
+    <div class="side-hd">Projects</div>
+    <div class="si on" onclick="setProj(this,'Transformer Inference Study')">⊡ Transformer Study <span class="ct">12</span></div>
+    <div class="si" onclick="setProj(this,'GPU Memory Sweep')">⊡ GPU Memory Sweep <span class="ct">8</span></div>
+    <div class="si" onclick="setProj(this,'Quant Method Bench')">⊡ Quant Method Bench <span class="ct">5</span></div>
+    <div class="si" onclick="setProj(this,'Edge Accelerator Tests')">⊡ Edge Accel Tests <span class="ct">3</span></div>
+  </div>
+  <div class="side-sec">
+    <div class="side-hd">Workload filter</div>
+    <div class="si" onclick="setWl(this,'All')">≡ All workloads</div>
+    <div class="si" onclick="setWl(this,'Inference')">▷ Inference</div>
+    <div class="si" onclick="setWl(this,'Training')">◈ Training</div>
+    <div class="si" onclick="setWl(this,'Classification')">◇ Classification</div>
+  </div>
+  <div class="side-sec">
+    <div class="side-hd">Quick links</div>
+    <div class="si" onclick="goTab(document.querySelectorAll('.tb-tab')[4],'newrun')">+ New experiment</div>
+    <div class="si" onclick="goTab(document.querySelectorAll('.tb-tab')[2],'hardware')">⬡ Manage hardware</div>
+    <div class="si" onclick="goTab(document.querySelectorAll('.tb-tab')[3],'compare')">⇌ Compare runs</div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- OVERVIEW -->
+<div class="pg on" id="pg-overview">
+  <div class="ph">
+    <div>
+      <div class="pt" id="proj-title">Transformer Inference Study</div>
+      <div class="ps" id="proj-sub">Loading...</div>
+    </div>
+  </div>
+  <div class="mrow" id="metrics-row"></div>
+  <div class="two">
+    <div class="panel"><div class="pht">Throughput by config (tokens/sec)</div><div id="chart-tp"></div></div>
+    <div class="panel"><div class="pht">Energy efficiency (tokens/J)</div><div id="chart-ee"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><span class="card-title">Recent runs</span></div>
+    <div class="toolbar">
+      <input class="sx" placeholder="Search model, hardware, workload..." oninput="filterRows(this.value,'ov-tbody')">
+      <select class="sx" style="width:150px" onchange="filterRows(this.value,'ov-tbody')">
+        <option value="">All workloads</option>
+        <option>Inference</option><option>Training</option><option>Classification</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr>
+          <th style="width:80px" onclick="sortTable('ov-tbody',0)">Run ID <span class="sort-arrow">↕</span></th>
+          <th style="width:110px">Model</th>
+          <th style="width:110px">Hardware</th>
+          <th style="width:90px">Workload</th>
+          <th style="width:90px">Optimization</th>
+          <th style="width:75px" onclick="sortTable('ov-tbody',5)">Latency <span class="sort-arrow">↕</span></th>
+          <th style="width:80px" onclick="sortTable('ov-tbody',6)">Throughput <span class="sort-arrow">↕</span></th>
+          <th style="width:65px">Power</th>
+          <th style="width:60px">Status</th>
+          <th style="width:70px"></th>
+        </tr></thead>
+        <tbody id="ov-tbody"></tbody>
+      </table>
+    </div>
+    <div class="note">Connect to your backend to replace mock data — swap the <code>experiments</code> array with a <code>fetch()</code> call to your API.</div>
+  </div>
+</div>
+
+<!-- EXPERIMENTS -->
+<div class="pg" id="pg-experiments">
+  <div class="ph">
+    <div><div class="pt">All experiments</div><div class="ps">Full table with sort, filter, and inline actions</div></div>
+    <button class="ibtn accent" onclick="goTab(document.querySelectorAll('.tb-tab')[4],'newrun')">+ Log run</button>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <input class="sx" placeholder="Search..." oninput="filterRows(this.value,'ex-tbody')">
+      <select class="sx" style="width:120px" onchange="filterRows(this.value,'ex-tbody')">
+        <option value="">All accel</option><option>GPU</option><option>TPU</option><option>NPU</option>
+      </select>
+      <select class="sx" style="width:115px" onchange="filterRows(this.value,'ex-tbody')">
+        <option value="">All precision</option><option>FP32</option><option>FP16</option><option>INT8</option><option>BF16</option>
+      </select>
+      <select class="sx" style="width:130px" onchange="sortByMetric(this.value)">
+        <option value="">Sort by metric</option>
+        <option value="lat">Best latency</option>
+        <option value="thr">Best throughput</option>
+        <option value="ee">Best efficiency</option>
+        <option value="pow">Lowest power</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr>
+          <th style="width:80px">Run ID</th>
+          <th style="width:110px">Model</th>
+          <th style="width:100px">Hardware</th>
+          <th style="width:90px">Workload</th>
+          <th style="width:90px">Optimization</th>
+          <th style="width:70px" onclick="sortTable('ex-tbody',5)">Latency <span class="sort-arrow">↕</span></th>
+          <th style="width:80px" onclick="sortTable('ex-tbody',6)">Throughput <span class="sort-arrow">↕</span></th>
+          <th style="width:70px" onclick="sortTable('ex-tbody',7)">Mem (GB) <span class="sort-arrow">↕</span></th>
+          <th style="width:65px">Power</th>
+          <th style="width:65px">Eff. (tk/J)</th>
+          <th style="width:55px">Status</th>
+          <th style="width:75px"></th>
+        </tr></thead>
+        <tbody id="ex-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- HARDWARE -->
+<div class="pg" id="pg-hardware">
+  <div class="ph">
+    <div><div class="pt">Hardware configurations</div><div class="ps">Manage accelerators, memory types, and architecture settings</div></div>
+    <button class="ibtn accent" onclick="toast('Connect to your DB to persist new hardware configs')">+ Add hardware</button>
+  </div>
+  <div class="hwg" id="hw-grid"></div>
+  <div class="card">
+    <div class="card-hd"><span class="card-title">Hardware usage summary</span></div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr>
+          <th>Name</th><th>Type</th><th>Memory</th><th>Bandwidth</th><th>TDP</th><th>Cache</th><th>Runs</th>
+        </tr></thead>
+        <tbody id="hw-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARE -->
+<div class="pg" id="pg-compare">
+  <div class="ph"><div><div class="pt">Compare experiments</div><div class="ps">Select runs and a metric to compare side-by-side</div></div></div>
+  <div class="two">
+    <div class="panel">
+      <div class="pht">Select runs (up to 6)</div>
+      <div id="cmp-list" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="panel">
+      <div class="pht">Metric</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="metric-btns">
+        <button class="ibtn accent" onclick="setCmpMetric(this,'thr')">Throughput</button>
+        <button class="ibtn" onclick="setCmpMetric(this,'lat')">Latency</button>
+        <button class="ibtn" onclick="setCmpMetric(this,'pow')">Power draw</button>
+        <button class="ibtn" onclick="setCmpMetric(this,'mem')">Memory</button>
+        <button class="ibtn" onclick="setCmpMetric(this,'ee')">Efficiency</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="pht" id="cmp-title">Throughput comparison (tokens/sec)</div>
+    <div id="cmp-chart" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- LOG RUN -->
+<div class="pg" id="pg-newrun">
+  <div class="ph"><div><div class="pt">Log new experiment run</div><div class="ps">Record hardware config, model, workload, and benchmark results</div></div></div>
+  <div style="max-width:600px">
+    <div class="card" style="padding:16px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Experiment context</div>
+      <div class="fg">
+        <div class="fgf"><label>Project</label>
+          <select id="f-proj"><option>Transformer Inference Study</option><option>GPU Memory Sweep</option><option>Quant Method Bench</option><option>Edge Accelerator Tests</option></select>
+        </div>
+        <div class="fgf"><label>Run label</label><input type="text" id="f-label" placeholder="e.g. A100-INT8-bert-v2"></div>
+        <div class="fgf"><label>Model name</label><input type="text" id="f-model" placeholder="e.g. BERT-large, GPT-2, ResNet-50"></div>
+        <div class="fgf"><label>Workload type</label>
+          <select id="f-wl"><option>Inference</option><option>Training</option><option>Classification</option><option>Object detection</option></select>
+        </div>
+        <div class="fgf"><label>Hardware config</label>
+          <select id="f-hw"><option>A100 SXM4 80GB</option><option>H100 PCIe 80GB</option><option>RTX 4090 24GB</option><option>TPU v4</option><option>Gaudi 2</option></select>
+        </div>
+        <div class="fgf"><label>Optimization method</label>
+          <select id="f-opt"><option>None (baseline)</option><option>INT8 quantization</option><option>FP16 mixed precision</option><option>BF16</option><option>Pruning</option><option>Flash Attention</option><option>GPTQ</option></select>
+        </div>
+        <div class="fgf"><label>Batch size</label><input type="number" id="f-bs" value="32" min="1"></div>
+        <div class="fgf"><label>Sequence length</label><input type="number" id="f-sl" value="512" min="1"></div>
+      </div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div style="font-size:11px;font-weight:500;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Benchmark results</div>
+      <div class="fg">
+        <div class="fgf"><label>Latency (ms)</label><input type="number" id="f-lat" placeholder="e.g. 1.4" step="0.1"></div>
+        <div class="fgf"><label>Throughput (tokens/sec)</label><input type="number" id="f-thr" placeholder="e.g. 9200"></div>
+        <div class="fgf"><label>Memory usage (GB)</label><input type="number" id="f-mem" placeholder="e.g. 24.0" step="0.1"></div>
+        <div class="fgf"><label>Power draw (W)</label><input type="number" id="f-pow" placeholder="e.g. 350"></div>
+        <div class="fgf full"><label>Notes / anomalies</label><textarea id="f-notes" placeholder="Environment details, reproduction notes, any anomalies observed..."></textarea></div>
+      </div>
+      <div class="fa">
+        <button class="ibtn" onclick="goTab(document.querySelectorAll('.tb-tab')[1],'experiments')">Cancel</button>
+        <button class="ibtn accent" onclick="submitRun()">✓ Log run</button>
+      </div>
+    </div>
+    <div class="note" style="border-radius:var(--radius-lg);margin-top:0">
+      <strong>DB integration:</strong> Wire <code>submitRun()</code> to POST to your backend endpoint, which should INSERT into <code>Experiment_Run</code> then <code>Benchmark_Result</code> + <code>Result_Metric</code>.
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+let experiments=[
+  {id:'run-041',model:'BERT-large',hw:'A100 SXM4',wl:'Inference',opt:'INT8',lat:1.4,thr:9200,mem:22.1,pow:310,status:'done'},
+  {id:'run-040',model:'GPT-2 medium',hw:'H100 PCIe',wl:'Inference',opt:'FP16',lat:1.8,thr:9800,mem:35.2,pow:420,status:'done'},
+  {id:'run-039',model:'ViT-B/16',hw:'RTX 4090',wl:'Classification',opt:'INT8',lat:2.3,thr:6600,mem:18.0,pow:180,status:'done'},
+  {id:'run-038',model:'ResNet-50',hw:'RTX 4090',wl:'Classification',opt:'FP16',lat:3.1,thr:5600,mem:12.0,pow:165,status:'done'},
+  {id:'run-037',model:'GPT-J 6B',hw:'A100 SXM4',wl:'Training',opt:'BF16',lat:12.0,thr:1200,mem:74.0,pow:380,status:'done'},
+  {id:'run-036',model:'BERT-base',hw:'TPU v4',wl:'Inference',opt:'BF16',lat:2.0,thr:7100,mem:8.3,pow:236,status:'done'},
+  {id:'run-035',model:'LLaMA-7B',hw:'A100 SXM4',wl:'Inference',opt:'None',lat:4.4,thr:3800,mem:64.0,pow:350,status:'fail'},
+  {id:'run-034',model:'Whisper-large',hw:'Gaudi 2',wl:'Inference',opt:'FP16',lat:3.2,thr:4100,mem:28.0,pow:420,status:'done'},
+];
+
+let hardware=[
+  {name:'A100 SXM4',type:'GPU · NVIDIA',mem:'80 GB HBM2e',bw:'2 TB/s',tdp:'400 W',cache:'40 MB L2'},
+  {name:'H100 PCIe',type:'GPU · NVIDIA',mem:'80 GB HBM3',bw:'2 TB/s',tdp:'350 W',cache:'50 MB L2'},
+  {name:'RTX 4090',type:'GPU · NVIDIA',mem:'24 GB GDDR6X',bw:'1 TB/s',tdp:'450 W',cache:'72 MB L2'},
+  {name:'TPU v4',type:'TPU · Google',mem:'32 GB HBM',bw:'1.2 TB/s',tdp:'275 W',cache:'N/A'},
+  {name:'Gaudi 2',type:'HPU · Intel',mem:'96 GB HBM2e',bw:'2.4 TB/s',tdp:'600 W',cache:'48 MB'},
+];
+
+let selectedCmp=new Set([0,1,2,3]);
+let cmpMetric='thr';
+let sortDirs={};
+
+const cmpCfg={
+  thr:{title:'Throughput comparison (tokens/sec)',key:'thr',unit:'K tok/s'},
+  lat:{title:'Latency comparison (ms — lower is better)',key:'lat',unit:'ms'},
+  pow:{title:'Power draw comparison (W)',key:'pow',unit:'W'},
+  mem:{title:'Memory usage comparison (GB)',key:'mem',unit:'GB'},
+  ee:{title:'Energy efficiency (tokens/J)',key:'ee',unit:'tk/J'},
+};
+
+function ee(r){return r.pow>0?+(r.thr/r.pow).toFixed(1):0;}
+
+function tagClass(wl){
+  if(wl==='Inference')return'tag-blue';
+  if(wl==='Training')return'tag-amber';
+  if(wl==='Classification')return'tag-teal';
+  return'tag-gray';
+}
+function statusTag(s){return s==='done'?'<span class="tag tag-green">done</span>':'<span class="tag tag-red">fail</span>';}
+function optTag(o){
+  const c=o==='None'||o==='None (baseline)'?'tag-gray':o.includes('INT8')||o.includes('GPTQ')?'tag-blue':o.includes('FP16')?'tag-teal':'tag-amber';
+  return`<span class="tag ${c}">${o}</span>`;
+}
+
+function renderOvRow(r){
+  return`<tr data-wl="${r.wl}" data-search="${(r.id+r.model+r.hw+r.wl+r.opt).toLowerCase()}">
+    <td>${r.id}</td><td>${r.model}</td><td>${r.hw}</td>
+    <td><span class="tag ${tagClass(r.wl)}">${r.wl}</span></td>
+    <td>${optTag(r.opt)}</td>
+    <td>${r.lat.toFixed(1)} ms</td><td>${r.thr.toLocaleString()}</td>
+    <td>${r.pow} W</td><td>${statusTag(r.status)}</td>
+    <td><div class="ract">
+      <button class="rb" onclick="toast('Edit: connect to your DB to persist changes')">✎</button>
+      <button class="rb del" onclick="deleteRun('${r.id}')">✕</button>
+    </div></td>
+  </tr>`;
+}
+
+function renderExRow(r){
+  return`<tr data-wl="${r.wl}" data-search="${(r.id+r.model+r.hw+r.wl+r.opt).toLowerCase()}">
+    <td>${r.id}</td><td>${r.model}</td><td>${r.hw}</td>
+    <td><span class="tag ${tagClass(r.wl)}">${r.wl}</span></td>
+    <td>${optTag(r.opt)}</td>
+    <td>${r.lat.toFixed(1)}</td><td>${r.thr.toLocaleString()}</td>
+    <td>${r.mem.toFixed(1)}</td><td>${r.pow}</td>
+    <td>${ee(r).toFixed(1)}</td>
+    <td>${statusTag(r.status)}</td>
+    <td><div class="ract">
+      <button class="rb" onclick="toast('Edit: connect to your DB to persist changes')">✎</button>
+      <button class="rb del" onclick="deleteRun('${r.id}')">✕</button>
+    </div></td>
+  </tr>`;
+}
+
+function renderTables(){
+  document.getElementById('ov-tbody').innerHTML=experiments.map(renderOvRow).join('');
+  document.getElementById('ex-tbody').innerHTML=experiments.map(renderExRow).join('');
+}
+
+function renderMetrics(){
+  const done=experiments.filter(r=>r.status==='done');
+  const bestLat=Math.min(...done.map(r=>r.lat));
+  const bestThr=Math.max(...done.map(r=>r.thr));
+  const bestEe=Math.max(...done.map(r=>ee(r)));
+  const avgPow=Math.round(done.reduce((a,r)=>a+r.pow,0)/done.length);
+  document.getElementById('proj-sub').textContent=`${experiments.length} experiment runs · ${done.length} successful`;
+  document.getElementById('metrics-row').innerHTML=`
+    <div class="mc"><div class="mc-l">Total runs</div><div class="mc-v">${experiments.length}</div><div class="mc-d up">↑ 4 this week</div></div>
+    <div class="mc"><div class="mc-l">Best latency</div><div class="mc-v">${bestLat.toFixed(1)} ms</div><div class="mc-d">lowest across configs</div></div>
+    <div class="mc"><div class="mc-l">Best throughput</div><div class="mc-v">${(bestThr/1000).toFixed(1)}K/s</div><div class="mc-d">tokens/sec</div></div>
+    <div class="mc"><div class="mc-l">Best efficiency</div><div class="mc-v">${bestEe.toFixed(1)}</div><div class="mc-d">tokens/joule</div></div>`;
+}
+
+function barColor(i){return['#3b82f6','#22d3ee','#f59e0b','#d85a30','#7f77dd','#22c55e','#d4537e','#8b94a8'][i%8];}
+
+function renderCharts(){
+  const done=experiments.filter(r=>r.status==='done');
+  const maxThr=Math.max(...done.map(r=>r.thr));
+  const maxEe=Math.max(...done.map(r=>ee(r)));
+  document.getElementById('chart-tp').innerHTML=done.slice(0,6).map((r,i)=>`
+    <div class="brow"><span class="blbl">${r.hw.split(' ').slice(0,2).join(' ')} · ${r.opt}</span>
+    <div class="bwrap"><div class="bfill" style="width:${Math.round(r.thr/maxThr*100)}%;background:${barColor(i)}">${(r.thr/1000).toFixed(1)}K</div></div></div>`).join('');
+  document.getElementById('chart-ee').innerHTML=done.slice(0,6).map((r,i)=>`
+    <div class="brow"><span class="blbl">${r.hw.split(' ').slice(0,2).join(' ')} · ${r.opt}</span>
+    <div class="bwrap"><div class="bfill" style="width:${Math.round(ee(r)/maxEe*100)}%;background:${barColor(i)}">${ee(r).toFixed(1)}</div></div></div>`).join('');
+}
+
+function renderHw(){
+  document.getElementById('hw-grid').innerHTML=hardware.map((h,i)=>`
+    <div class="hwc" onclick="this.classList.toggle('sel')">
+      <div class="hw-n">${h.name}</div><div class="hw-t">${h.type}</div>
+      <div class="hw-row"><span class="hw-k">Memory</span><span class="hw-v">${h.mem}</span></div>
+      <div class="hw-row"><span class="hw-k">Bandwidth</span><span class="hw-v">${h.bw}</span></div>
+      <div class="hw-row"><span class="hw-k">TDP</span><span class="hw-v">${h.tdp}</span></div>
+      <div class="hw-row"><span class="hw-k">Cache</span><span class="hw-v">${h.cache}</span></div>
+    </div>`).join('');
+  document.getElementById('hw-tbody').innerHTML=hardware.map(h=>{
+    const runs=experiments.filter(r=>r.hw.startsWith(h.name.split(' ')[0])).length;
+    return`<tr><td>${h.name}</td><td>${h.type}</td><td>${h.mem}</td><td>${h.bw}</td><td>${h.tdp}</td><td>${h.cache}</td><td>${runs}</td></tr>`;
+  }).join('');
+}
+
+function renderCompare(){
+  const cfg=cmpCfg[cmpMetric];
+  document.getElementById('cmp-title').textContent=cfg.title;
+  const sel=experiments.filter((_,i)=>selectedCmp.has(i));
+  const vals=sel.map(r=>cmpMetric==='ee'?ee(r):r[cfg.key]);
+  const maxV=Math.max(...vals,0.001);
+  const isLower=cmpMetric==='lat';
+  const minV=Math.min(...vals);
+  document.getElementById('cmp-chart').innerHTML=sel.map((r,i)=>{
+    const v=vals[i];
+    const pct=isLower?Math.round((1-(v-minV)/(maxV-minV||1))*80+20):Math.round(v/maxV*100);
+    const disp=cmpMetric==='thr'?(v/1000).toFixed(1)+'K':v.toFixed(cmpMetric==='pow'?0:1);
+    return`<div class="brow"><span class="blbl">${r.id} — ${r.model}</span>
+      <div class="bwrap"><div class="bfill" style="width:${pct}%;background:${barColor(i)}">${disp} ${cfg.unit}</div></div></div>`;
+  }).join('');
+  document.getElementById('cmp-list').innerHTML=experiments.map((r,i)=>`
+    <label style="display:flex;align-items:center;gap:7px;font-size:11px;cursor:pointer">
+      <input type="checkbox" ${selectedCmp.has(i)?'checked':''} onchange="toggleCmp(${i},this.checked)" style="accent-color:var(--accent)">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${barColor(i)};flex-shrink:0"></span>
+      ${r.id} — ${r.model} · ${r.hw}
+    </label>`).join('');
+}
+
+function toggleCmp(i,v){v?selectedCmp.add(i):selectedCmp.delete(i);renderCompare();}
+function setCmpMetric(btn,m){
+  document.querySelectorAll('#metric-btns .ibtn').forEach(b=>b.classList.remove('accent'));
+  btn.classList.add('accent');
+  cmpMetric=m;renderCompare();
+}
+
+function filterRows(q,tbodyId){
+  document.getElementById(tbodyId).querySelectorAll('tr').forEach(tr=>{
+    const s=tr.dataset.search||'';const w=tr.dataset.wl||'';
+    tr.style.display=(s.includes(q.toLowerCase())||w.toLowerCase().includes(q.toLowerCase())||q==='')?'':'none';
+  });
+}
+
+function sortTable(tbodyId,col){
+  const tbody=document.getElementById(tbodyId);
+  const rows=Array.from(tbody.querySelectorAll('tr'));
+  const k=tbodyId+col;sortDirs[k]=!sortDirs[k];
+  rows.sort((a,b)=>{
+    const av=+(a.cells[col]?.textContent.replace(/[^0-9.]/g,'')||0);
+    const bv=+(b.cells[col]?.textContent.replace(/[^0-9.]/g,'')||0);
+    return sortDirs[k]?av-bv:bv-av;
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+}
+
+function sortByMetric(v){
+  if(!v)return;
+  const s=[...experiments];
+  if(v==='lat')s.sort((a,b)=>a.lat-b.lat);
+  else if(v==='thr')s.sort((a,b)=>b.thr-a.thr);
+  else if(v==='ee')s.sort((a,b)=>ee(b)-ee(a));
+  else if(v==='pow')s.sort((a,b)=>a.pow-b.pow);
+  document.getElementById('ex-tbody').innerHTML=s.map(renderExRow).join('');
+}
+
+function deleteRun(id){
+  if(!confirm(`Delete ${id}? This cannot be undone.`))return;
+  experiments=experiments.filter(r=>r.id!==id);
+  renderAll();toast(`Deleted ${id}`);
+}
+
+function submitRun(){
+  const model=document.getElementById('f-model').value.trim();
+  const lat=parseFloat(document.getElementById('f-lat').value);
+  const thr=parseFloat(document.getElementById('f-thr').value);
+  if(!model||isNaN(lat)||isNaN(thr)){toast('Fill in model name, latency, and throughput');return;}
+  const maxId=Math.max(...experiments.map(r=>parseInt(r.id.split('-')[1])));
+  const newId='run-'+(maxId+1);
+  experiments.unshift({
+    id:newId,model,
+    hw:document.getElementById('f-hw').value.split(' ').slice(0,2).join(' '),
+    wl:document.getElementById('f-wl').value,
+    opt:document.getElementById('f-opt').value.replace(' quantization','').replace(' mixed precision',''),
+    lat,thr,
+    mem:parseFloat(document.getElementById('f-mem').value)||0,
+    pow:parseFloat(document.getElementById('f-pow').value)||0,
+    status:'done'
+  });
+  renderAll();
+  goTab(document.querySelectorAll('.tb-tab')[1],'experiments');
+  toast(`${newId} logged successfully`);
+}
+
+function exportCSV(){
+  const rows=['Run ID,Model,Hardware,Workload,Optimization,Latency(ms),Throughput,Mem(GB),Power(W),Efficiency(tk/J),Status',
+    ...experiments.map(r=>`${r.id},${r.model},${r.hw},${r.wl},${r.opt},${r.lat},${r.thr},${r.mem},${r.pow},${ee(r)},${r.status}`)];
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));
+  a.download='benchmarkdb_export.csv';a.click();
+  toast('CSV downloaded');
+}
+
+function setProj(el,name){
+  document.querySelectorAll('.side .si').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('proj-title').textContent=name;
+}
+
+function setWl(el,wl){
+  document.querySelectorAll('.side .si').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  const q=wl==='All'?'':wl;
+  filterRows(q,'ov-tbody');filterRows(q,'ex-tbody');
+}
+
+function goTab(el,id){
+  document.querySelectorAll('.tb-tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  if(el)el.classList.add('on');
+  const pg=document.getElementById('pg-'+id);
+  if(pg)pg.classList.add('on');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function renderAll(){renderMetrics();renderTables();renderCharts();renderHw();renderCompare();}
+renderAll();
+</script>
+</body>
+</html>
