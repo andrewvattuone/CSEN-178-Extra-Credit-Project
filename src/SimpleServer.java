@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -21,6 +22,7 @@ import java.util.regex.Pattern;
 public class SimpleServer {
     private static final int PORT = 8080;
     private static final Path ROOT = Path.of("..").toAbsolutePath().normalize();
+    private static final DateTimeFormatter SQL_DATETIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static final List<String> TABLES = List.of(
             "User", "Project", "AI_Model", "Workload", "Hardware_System",
@@ -319,8 +321,8 @@ public class SimpleServer {
         List<String> pks = primaryKeys(table);
         if (pks.isEmpty()) throw new IllegalArgumentException("Table has no primary key.");
         List<String> columns = columnNames(table);
-        List<String> editable = columns.stream().filter(c -> !pks.contains(c) && body.containsKey(c)).toList();
-        if (editable.isEmpty()) throw new IllegalArgumentException("No non-key values submitted.");
+        List<String> editable = columns.stream().filter(body::containsKey).toList();
+        if (editable.isEmpty()) throw new IllegalArgumentException("No values submitted.");
         for (String pk : pks) if (!body.containsKey("pk_" + pk)) throw new IllegalArgumentException("Missing primary key: " + pk);
         String sql = "UPDATE " + ident(table) + " SET " + joinAssignments(editable) + " WHERE " + joinPkWhere(pks);
         try (Connection conn = DBConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -489,8 +491,9 @@ public class SimpleServer {
     private static String jsonValue(Object value) {
         if (value == null) return "null";
         if (value instanceof Number || value instanceof Boolean) return value.toString();
-        if (value instanceof Timestamp ts) return json(ts.toLocalDateTime().toString());
-        if (value instanceof java.sql.Date || value instanceof Time || value instanceof LocalDateTime) return json(value.toString());
+        if (value instanceof Timestamp ts) return json(ts.toLocalDateTime().format(SQL_DATETIME));
+        if (value instanceof LocalDateTime dt) return json(dt.format(SQL_DATETIME));
+        if (value instanceof java.sql.Date || value instanceof Time) return json(value.toString());
         if (value instanceof BigDecimal bd) return bd.stripTrailingZeros().toPlainString();
         return json(value.toString());
     }
@@ -520,6 +523,9 @@ public class SimpleServer {
         return out.append(']').toString();
     }
 }
+
+
+
 
 
 
