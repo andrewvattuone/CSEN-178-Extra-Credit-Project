@@ -1,6 +1,6 @@
 import java.sql.*;
 
-public class oldMain {
+public class javaqueries {
 
     public static void runQuery(String title, String sql) {
 
