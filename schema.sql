@@ -157,8 +157,8 @@ CREATE TABLE Works_On (
 	join_date DATETIME,
 	notes VARCHAR(100),
 PRIMARY KEY (user_id, project_id),
-FOREIGN KEY (user_id) REFERENCES User(user_id),
-FOREIGN KEY (project_id) REFERENCES Project(project_id)
+FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+FOREIGN KEY (project_id) REFERENCES Project(project_id) ON DELETE CASCADE
 );
 
 CREATE TABLE Experiment_Run_Optimization (
