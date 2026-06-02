@@ -216,7 +216,10 @@ public class SimpleServer {
             String sql = SAVED_QUERIES.get(id);
             if (sql == null) throw new IllegalArgumentException("Unknown query id: " + id);
             try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement()) {
-                sendJson(ex, 200, resultSetJson(stmt.executeQuery(sql)));
+                long start = System.nanoTime();
+                ResultSet rs = stmt.executeQuery(sql);
+                long queryTimeMs = (System.nanoTime() - start) / 1_000_000;
+                sendJson(ex, 200, queryResultJson(rs, sql, queryTimeMs));
             }
         } catch (Exception e) {
             sendError(ex, e);
@@ -231,7 +234,10 @@ public class SimpleServer {
                 throw new IllegalArgumentException("Custom query runner only accepts SELECT, WITH, SHOW, DESCRIBE, and EXPLAIN statements. Use the table editor for inserts, updates, and deletes.");
             }
             try (Connection conn = DBConnection.getConnection(); Statement stmt = conn.createStatement()) {
-                sendJson(ex, 200, resultSetJson(stmt.executeQuery(sql)));
+                long start = System.nanoTime();
+                ResultSet rs = stmt.executeQuery(sql);
+                long queryTimeMs = (System.nanoTime() - start) / 1_000_000;
+                sendJson(ex, 200, queryResultJson(rs, sql, queryTimeMs));
             }
         } catch (Exception e) {
             sendError(ex, e);
@@ -399,6 +405,11 @@ public class SimpleServer {
         }
         rows.append(']');
         return "{\"columns\":" + cols + ",\"rows\":" + rows + "}";
+    }
+
+    private static String queryResultJson(ResultSet rs, String sql, long queryTimeMs) throws SQLException {
+        String base = resultSetJson(rs);
+        return "{\"sql\":" + json(sql) + ",\"queryTimeMs\":" + queryTimeMs + "," + base.substring(1);
     }
 
     private static String normalizeSql(String sql) {

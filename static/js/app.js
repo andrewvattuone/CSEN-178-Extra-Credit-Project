@@ -361,9 +361,15 @@ async function importJsonFile(file) {
 async function runSavedQuery(id) {
   try {
     $("queryHint").textContent = "Query " + id + ": " + queryLabels[id];
+    $("queryMeta").innerHTML = "";
     $("queryResult").innerHTML = '<div class="empty">Running query...</div>';
     const data = await api("/api/query?id=" + id);
-    renderQueryResult(data.columns, data.rows);
+    $("queryHint").textContent =
+      `Query ${id}: ${queryLabels[id]} (${data.queryTimeMs} ms)`;
+    renderQueryResult(data.columns, data.rows, {
+      sql: data.sql,
+      queryTimeMs: data.queryTimeMs,
+    });
   } catch (err) {
     renderQueryError(err);
   }
@@ -372,26 +378,35 @@ $("runCustomBtn").onclick = async () => {
   try {
     const sql = $("customSql").value.trim();
     $("queryHint").textContent = "Running custom query...";
+    $("queryMeta").innerHTML = "";
     $("queryResult").innerHTML = '<div class="empty">Running query...</div>';
     const data = await api("/api/custom-query", {
       method: "POST",
       body: params({ sql }),
     });
     $("queryHint").textContent =
-      "Custom query returned " + data.rows.length + " row(s).";
-    renderQueryResult(data.columns, data.rows);
+      `Custom query returned ${data.rows.length} row(s) in ${data.queryTimeMs} ms.`;
+    renderQueryResult(data.columns, data.rows, {
+      sql: data.sql,
+      queryTimeMs: data.queryTimeMs,
+    });
   } catch (err) {
     renderQueryError(err);
   }
 };
 function renderQueryError(err) {
   $("queryHint").textContent = "Query failed.";
+  $("queryMeta").innerHTML = "";
   $("queryResult").innerHTML =
     `<div class="error">${escapeHtml(err.message)}</div>`;
   toast("Query failed");
 }
-function renderQueryResult(columns, rows) {
+function renderQueryResult(columns, rows, meta = null) {
+  const metaHtml = meta
+    ? `<div class="query-meta"><div><strong>Query time:</strong> ${meta.queryTimeMs} ms</div><div><strong>SQL:</strong></div><pre>${escapeHtml(meta.sql || "")}</pre></div>`
+    : "";
   if (!rows.length) {
+    $("queryMeta").innerHTML = metaHtml;
     $("queryResult").innerHTML =
       '<div class="empty">Query ran successfully, but returned no rows.</div>';
     return;
@@ -405,6 +420,7 @@ function renderQueryResult(columns, rows) {
         "</tr>",
     )
     .join("");
+  $("queryMeta").innerHTML = metaHtml;
   $("queryResult").innerHTML =
     `<p class="result-title"><span class="badge">${rows.length} row(s)</span></p><div class="table-wrap"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
