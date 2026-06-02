@@ -246,7 +246,9 @@ public class SimpleServer {
                 sendText(ex, 404, "Not found", "text/plain");
                 return;
             }
-            String contentType = rawPath.endsWith(".html") ? "text/html" : rawPath.endsWith(".css") ? "text/css" : "text/plain";
+            String contentType = file.toString().endsWith(".html") ? "text/html"
+                    : file.toString().endsWith(".css") ? "text/css"
+                    : "text/plain";
             byte[] data = Files.readAllBytes(file);
             ex.getResponseHeaders().set("Content-Type", contentType + "; charset=utf-8");
             ex.sendResponseHeaders(200, data.length);
