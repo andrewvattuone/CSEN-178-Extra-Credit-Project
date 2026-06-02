@@ -1,0 +1,25 @@
+# Java build output
+*.class
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*~
+
+# Java archives and temporary downloads
+*.jar
+
+# If you keep a local Gradle/Maven build later
+.gradle/
+target/
+build/
