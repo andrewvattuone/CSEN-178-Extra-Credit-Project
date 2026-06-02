@@ -1,3 +1,8 @@
+-- queries.sql
+--
+-- Example report queries for the AI Hardware Benchmark Tracker dataset.
+-- These statements are useful for verifying the database contents and exercising the query APIs.
+
 USE DBAIHardwareBenchmark;
 
 -- SELECT * FROM User;

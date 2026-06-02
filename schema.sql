@@ -1,3 +1,8 @@
+-- schema.sql
+--
+-- Creates the AI Hardware Benchmark schema and all tables used by the web application.
+-- Run this script after the database user has been created.
+
 DROP DATABASE IF EXISTS DBAIHardwareBenchmark;
 CREATE DATABASE DBAIHardwareBenchmark;
 USE DBAIHardwareBenchmark;

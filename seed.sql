@@ -1,3 +1,8 @@
+-- seed.sql
+--
+-- Populates the AI Hardware Benchmark database with sample rows for development and testing.
+-- This script should be executed after schema.sql has created all tables.
+
 USE DBAIHardwareBenchmark;
 
 -- Users
