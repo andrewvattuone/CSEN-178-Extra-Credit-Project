@@ -5,7 +5,10 @@ The app serves a static frontend and provides CRUD/query APIs for a hardware ben
 
 ## Repository layout
 
-- `index.html` — frontend page served by the Java server
+- `static/` — frontend assets served by the Java server
+  - `static/index.html` — frontend page
+  - `static/css/styles.css` — UI styles
+  - `static/js/app.js` — frontend application logic
 - `schema.sql` — database schema creation script
 - `seed.sql` — sample data load script
 - `create_dbuser.sql` — creates the MySQL user used by the app
@@ -62,6 +65,24 @@ java -cp .:../mysql-connector-j-9.7.0/mysql-connector-j-9.7.0.jar SimpleServer
 ```text
 http://localhost:8080
 ```
+
+## Helper scripts
+
+This repo includes lightweight shell scripts in `scripts/` to simplify setup and execution.
+
+- `scripts/init-db.sh` — create the database user, schema, and sample data
+- `scripts/start-server.sh` — compile the Java sources and launch `SimpleServer`
+- `scripts/run-queries.sh` — compile and run the `javaqueries` helper
+
+Run them like this:
+
+```zsh
+./scripts/init-db.sh
+./scripts/start-server.sh
+./scripts/run-queries.sh
+```
+
+If `MYSQL_ROOT_PASSWORD` is set, `scripts/init-db.sh` will use it when connecting as root.
 
 ## Notes
 

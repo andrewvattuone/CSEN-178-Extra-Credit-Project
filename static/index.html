@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Hardware Benchmark Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div class="brand">AI Hardware <span>Benchmark Tracker</span></div>
+        <div class="status" id="status">Connecting to Java server...</div>
+      </header>
+      <div class="layout" id="layout">
+        <aside class="side">
+          <h2>Tables</h2>
+          <div class="nav" id="tableNav"></div>
+          <div class="side-note">
+            Use the Queries tab for multi-table reports and custom SELECT
+            statements.
+          </div>
+        </aside>
+        <main class="main">
+          <div class="tabs">
+            <button class="tab on" data-view="home">Home</button
+            ><button class="tab" data-view="tables">Table editor</button
+            ><button class="tab" data-view="queries">Queries</button>
+          </div>
+          <section id="view-home">
+            <div class="home-grid" id="homeSummary"></div>
+            <div class="home-panels">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Database overview</div>
+                    <div class="hint">
+                      Table sizes from the live MySQL database.
+                    </div>
+                  </div>
+                </div>
+                <div class="pad">
+                  <div class="home-list" id="tableOverview"></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Recent experiment runs</div>
+                    <div class="hint">Latest runs currently tracked.</div>
+                  </div>
+                </div>
+                <div class="pad">
+                  <div class="home-list" id="recentRuns"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="view-tables" style="display: none">
+            <div class="summary" id="tableSummary"></div>
+            <div class="grid">
+              <div>
+                <div class="card">
+                  <div class="card-head">
+                    <div>
+                      <div class="card-title" id="tableTitle">Tables</div>
+                      <div class="hint" id="tableHint">
+                        Add, edit, and delete rows in every table.
+                      </div>
+                    </div>
+                    <div class="toolbar">
+                      <button class="btn" id="refreshBtn">Refresh</button
+                      ><button class="btn" id="exportJsonBtn">
+                        Export JSON</button
+                      ><button class="btn" id="exportCsvBtn">Export CSV</button
+                      ><button class="btn warm" id="importJsonBtn">
+                        Import JSON</button
+                      ><input
+                        class="file-input"
+                        type="file"
+                        id="importJsonFile"
+                        accept="application/json,.json"
+                      />
+                    </div>
+                  </div>
+                  <div class="table-wrap" id="rows"></div>
+                </div>
+                <div class="metadata-section">
+                  <div class="table-footer">
+                    <div class="card">
+                      <div class="card-head">
+                        <div>
+                          <div class="card-title">Schema profile</div>
+                          <div class="hint">
+                            Fields and data types for the selected table.
+                          </div>
+                        </div>
+                      </div>
+                      <div class="pad">
+                        <div class="schema-list" id="schemaProfile"></div>
+                      </div>
+                    </div>
+                    <div class="card">
+                      <div class="card-head">
+                        <div>
+                          <div class="card-title">Key fields</div>
+                          <div class="hint">
+                            Primary keys and commonly edited columns.
+                          </div>
+                        </div>
+                      </div>
+                      <div class="pad">
+                        <div class="mini-list" id="keyFields"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title" id="formTitle">Add row</div>
+                    <div class="hint">
+                      Generated from the selected table schema.
+                    </div>
+                  </div>
+                </div>
+                <div class="pad">
+                  <form id="rowForm">
+                    <div class="form-grid" id="fields"></div>
+                    <div class="actions">
+                      <button type="button" class="btn" id="clearBtn">
+                        Clear</button
+                      ><button type="submit" class="btn primary" id="saveBtn">
+                        Add row
+                      </button>
+                    </div>
+                  </form>
+                  <div class="import-note">
+                    JSON is best for generated ML workload data because it
+                    preserves structured run parameters and metrics. CSV export
+                    is included for spreadsheet review.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="view-queries" style="display: none">
+            <div class="grid">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Query results</div>
+                    <div class="hint" id="queryHint">
+                      Choose a default query or run your own read-only query.
+                    </div>
+                  </div>
+                </div>
+                <div class="pad" id="queryResult">
+                  <div class="empty">No query has been run yet.</div>
+                </div>
+              </div>
+              <div>
+                <div class="card">
+                  <div class="card-head">
+                    <div>
+                      <div class="card-title">Default queries</div>
+                      <div class="hint">
+                        The seven required reports from queries.sql.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pad">
+                    <div class="query-buttons" id="savedQueryNav"></div>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-head">
+                    <div>
+                      <div class="card-title">Create a new query</div>
+                      <div class="hint">
+                        SELECT, WITH, SHOW, DESCRIBE, and EXPLAIN are allowed.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pad">
+                    <textarea id="customSql" spellcheck="false">
+SELECT ER.run_id, ER.run_name, AIM.model_name, HS.system_name, RM.metric_name, RM.metric_value, RM.unit
+FROM Experiment_Run ER
+JOIN AI_Model AIM ON ER.model_id = AIM.model_id
+JOIN Hardware_System HS ON ER.system_id = HS.system_id
+JOIN Benchmark_Result BR ON ER.run_id = BR.run_id
+JOIN Result_Metric RM ON BR.result_id = RM.result_id
+ORDER BY ER.run_datetime DESC</textarea
+                    >
+                    <div class="actions">
+                      <button class="btn green" id="runCustomBtn">
+                        Run custom query
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div class="message" id="message"></div>
+    <script src="/js/app.js"></script>
+  </body>
+</html>

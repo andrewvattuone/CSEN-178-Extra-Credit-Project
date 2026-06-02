@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 
 public class SimpleServer {
     private static final int PORT = 8080;
-    private static final Path ROOT = Path.of("..").toAbsolutePath().normalize();
+    private static final Path ROOT = Path.of("..", "static").toAbsolutePath().normalize();
     private static final DateTimeFormatter SQL_DATETIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static final List<String> TABLES = List.of(
