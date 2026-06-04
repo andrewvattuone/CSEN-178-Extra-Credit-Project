@@ -175,3 +175,21 @@ PRIMARY KEY (run_id, optimization_id),
 FOREIGN KEY (run_id) REFERENCES Experiment_Run(run_id) ON DELETE CASCADE,
 FOREIGN KEY (optimization_id) REFERENCES Optimization_Method (optimization_id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_result_metric_name
+ON Result_Metric(metric_name);
+
+CREATE INDEX idx_workload_type
+ON Workload(workload_type);
+
+CREATE INDEX idx_ai_model_family
+ON AI_Model(model_family);
+
+CREATE INDEX idx_optimization_name
+ON Optimization_Method(optimization_name);
+
+CREATE INDEX idx_experiment_run_config
+ON Experiment_Run(system_id, config_id);
+
+CREATE INDEX idx_experiment_run_environment
+ON Experiment_Run(environment_id);
