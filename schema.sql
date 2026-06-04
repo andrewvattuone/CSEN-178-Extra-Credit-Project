@@ -192,4 +192,4 @@ CREATE INDEX idx_experiment_run_config
 ON Experiment_Run(system_id, config_id);
 
 CREATE INDEX idx_experiment_run_environment
-ON Experiment_Run(environment_id);
+ON Experiment_Run(environment_id)
